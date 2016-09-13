@@ -47,15 +47,15 @@ fn extract_args() -> Result<Command, String> {
     }
 }
 
-fn run() -> Result<(), AppError> {
-    let command = try!(extract_args().map_err(AppError::Args));
+fn run() -> Result<(), Box<Error>> {
+    let command = try!(extract_args());
 
     match command {
         Command::Init => init(),
     }
 }
 
-fn init() -> Result<(), AppError> {
+fn init() -> Result<(), Box<Error>> {
     print!("GitHub organization name: ");
     io::stdout().flush().unwrap();
 
@@ -66,9 +66,9 @@ fn init() -> Result<(), AppError> {
         buff.trim().to_owned()
     };
 
-    let ref dir_name = try!(extract_dir_name().map_err(AppError::IO));
+    let ref dir_name = try!(extract_dir_name());
 
-    let repos = try!(fetch(&org_name).map_err(AppError::General));
+    let repos = try!(fetch(&org_name));
     let workspace = Workspace {
         host: "github.com".to_owned(),
         organization: org_name,
@@ -79,17 +79,38 @@ fn init() -> Result<(), AppError> {
 
     use std::io::Write;
     use std::io::BufWriter;
-    let mut file = BufWriter::new(try!(File::create(".gowm").map_err(AppError::IO)));
-    try!(file.write_all(toml_str.as_bytes()).map_err(AppError::IO));
+    let mut file = BufWriter::new(try!(File::create(".gowm")));
+    try!(file.write_all(toml_str.as_bytes()));
 
     Ok(())
 }
 
 #[derive(Debug)]
-enum AppError {
-    General(String),
-    IO(io::Error),
-    Args(String),
+struct GeneralError {
+    message: String,
+}
+
+use std::fmt;
+impl fmt::Display for GeneralError {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "Error: {}", self.message)
+    }
+}
+
+impl Error for GeneralError {
+    fn description(&self) -> &str {
+        self.message.as_ref()
+    }
+
+    fn cause(&self) -> Option<&Error> {
+        None
+    }
+}
+
+impl From<String> for GeneralError {
+    fn from(str: String) -> Self {
+        GeneralError { message: str }
+    }
 }
 
 #[derive(Debug, RustcEncodable, RustcDecodable)]
