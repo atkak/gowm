@@ -5,6 +5,7 @@ extern crate hyper;
 extern crate rustc_serialize;
 extern crate core;
 extern crate toml;
+extern crate clap;
 
 use std::env;
 use std::io;
@@ -15,10 +16,12 @@ use hyper::client::Client;
 use hyper::header::UserAgent;
 use hyper::status::StatusCode;
 use rustc_serialize::json;
+use clap::{Arg, App, SubCommand};
 
 
 fn main() {
     env_logger::init().unwrap();
+
 
     if let Err(error) = run() {
         error!("Failed. error: {:?}", error);
@@ -26,24 +29,67 @@ fn main() {
     }
 }
 
-fn run() -> Result<(), CliError> {
-    let ref dir_name = try!(extract_dir_name().map_err(CliError::IO));
+enum Command {
+    Init,
+}
 
-    let repos = Repos { repositories: try!(fetch(dir_name).map_err(CliError::General)) };
-    let toml_str = toml::encode_str(&repos);
+fn extract_args() -> Result<Command, String> {
+    let matches = App::new("gowm")
+        .version("0.1.0")
+        .about("Workspace manager for each GitHub organizations.")
+        .subcommand(SubCommand::with_name("init")
+            .about("Initialize current directory as workspace."))
+        .get_matches();
+
+    match matches.subcommand() {
+        ("init", Some(_)) => Ok(Command::Init),
+        _ => Err(matches.usage().to_owned()),
+    }
+}
+
+fn run() -> Result<(), AppError> {
+    let command = try!(extract_args().map_err(AppError::Args));
+
+    match command {
+        Command::Init => init(),
+    }
+}
+
+fn init() -> Result<(), AppError> {
+    print!("GitHub organization name: ");
+    io::stdout().flush().unwrap();
+
+    let org_name = {
+        let stdin = io::stdin();
+        let mut buff = String::new();
+        stdin.read_line(&mut buff).unwrap();
+        buff.trim().to_owned()
+    };
+
+    let ref dir_name = try!(extract_dir_name().map_err(AppError::IO));
+
+    let repos = try!(fetch(&org_name).map_err(AppError::General));
+    let workspace = Workspace {
+        host: "github.com".to_owned(),
+        organization: org_name,
+        repositories: repos,
+    };
+
+    let toml_str = toml::encode_str(&workspace);
 
     use std::io::Write;
     use std::io::BufWriter;
-    let mut file = BufWriter::new(try!(File::create(".gowm").map_err(CliError::IO)));
-    try!(file.write_all(toml_str.as_bytes()).map_err(CliError::IO));
+    let mut file = BufWriter::new(try!(File::create(".gowm").map_err(AppError::IO)));
+    try!(file.write_all(toml_str.as_bytes()).map_err(AppError::IO));
 
     Ok(())
 }
 
 #[derive(Debug)]
-enum CliError {
+enum AppError {
     General(String),
     IO(io::Error),
+    Args(String),
 }
 
 #[derive(Debug, RustcEncodable, RustcDecodable)]
@@ -54,13 +100,16 @@ struct Repo {
 }
 
 #[derive(Debug, RustcEncodable, RustcDecodable)]
-struct Repos {
-    repositories: Vec<Repo>
+struct Workspace {
+    host: String,
+    organization: String,
+    repositories: Vec<Repo>,
 }
 
 fn fetch(org: &str) -> Result<Vec<Repo>, String> {
     let client = Client::new();
-    let mut res = client.get(format!("https://api.github.com/orgs/{}/repos", org))
+    let ref url = format!("https://api.github.com/orgs/{}/repos", org);
+    let mut res = client.get(url)
         .header(UserAgent("gowm".to_owned()))
         .send()
         .unwrap();
