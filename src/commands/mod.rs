@@ -9,5 +9,6 @@ pub fn run() -> Result<(), Box<Error>> {
 
     match command {
         Command::Init => workspace::init(),
+        Command::Open => workspace::open(),
     }
 }

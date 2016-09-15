@@ -7,7 +7,7 @@ pub fn exec() -> Result<(), Box<Error>> {
 
     println!("Fetch organization repositories");
 
-    try!(workspace.fetch_repos());
+    try!(workspace.update_repos_meta());
 
     println!("Create workspace");
 

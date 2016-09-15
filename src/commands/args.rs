@@ -3,6 +3,7 @@ use clap::{App, SubCommand};
 
 pub enum Command {
     Init,
+    Open,
 }
 
 pub fn extract_args() -> Result<Command, String> {
@@ -11,10 +12,13 @@ pub fn extract_args() -> Result<Command, String> {
         .about("Workspace manager for each GitHub organizations.")
         .subcommand(SubCommand::with_name("init")
             .about("Initialize current directory as workspace."))
+        .subcommand(SubCommand::with_name("open")
+            .about("Open selected project in the current workspace."))
         .get_matches();
 
     match matches.subcommand() {
         ("init", Some(_)) => Ok(Command::Init),
+        ("open", Some(_)) => Ok(Command::Open),
         _ => Err(matches.usage().to_owned()),
     }
 }

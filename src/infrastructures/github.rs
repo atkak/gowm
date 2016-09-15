@@ -12,6 +12,12 @@ pub struct Repo {
     git_url: String,
 }
 
+impl Repo {
+    pub fn name(&self) -> &str { &self.name }
+    pub fn html_url(&self) -> &str { &self.html_url }
+    pub fn git_url(&self) -> &str { &self.git_url }
+}
+
 pub fn fetch_org_repos(org: &str) -> Result<Vec<Repo>, Box<Error>> {
     let client = Client::new();
     let ref url = format!("https://api.github.com/orgs/{}/repos", org);
