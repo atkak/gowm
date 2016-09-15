@@ -2,10 +2,10 @@ use std;
 use std::error::Error;
 use std::result::Result;
 use infrastructures::github;
-use infrastructures::io;
-use infrastructures::config;
 
 mod init;
+mod config;
+mod io;
 
 pub fn init() -> Result<(), Box<Error>> {
     init::exec()

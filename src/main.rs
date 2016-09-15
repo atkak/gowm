@@ -7,7 +7,7 @@ extern crate core;
 extern crate toml;
 extern crate clap;
 
-mod apps;
+mod workspace;
 mod commands;
 mod infrastructures;
 mod error;

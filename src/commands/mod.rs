@@ -1,6 +1,6 @@
 use std::error::Error;
 use self::args::Command;
-use apps::workspace;
+use workspace;
 
 mod args;
 

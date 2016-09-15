@@ -2,7 +2,7 @@ use std::io;
 use std::io::{Write, BufWriter};
 use std::fs::File;
 use toml;
-use apps::workspace::Workspace;
+use super::Workspace;
 
 pub fn save(workspace: &Workspace) -> io::Result<()> {
     let toml_str = toml::encode_str(workspace);
